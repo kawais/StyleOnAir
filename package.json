@@ -4,7 +4,7 @@
   "description": "css on air",
   "main": "index.js",
   "scripts": {
-    "run": "nodemon index.js",
+    "run": "set SOA_PORT=8888 & nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
