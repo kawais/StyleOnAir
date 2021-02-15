@@ -1,34 +1,69 @@
 (function (win) {
-
-
-    function getDomPath(el) {
-        var stack = []
-        while (el.parentNode != null) {
-            var sibCount = 0
-            var sibIndex = 0
-            for (var i = 0; i < el.parentNode.childNodes.length; i++) {
-                var sib = el.parentNode.childNodes[i]
-                if (sib.nodeName == el.nodeName) {
-                    if (sib === el) {
-                        sibIndex = sibCount
-                    }
-                    sibCount++
-                }
+    //https://github.com/zypox/dom-element-path
+    const parentElements = (element) => {
+        const parents = [];
+        while (element) {
+            const tagName = element.nodeName.toLowerCase();
+            const cssId = element.id ? `#${element.id}` : '';
+            let cssClass = '';
+            if (element.className && typeof element.className === 'string') {
+                // escape class names
+                cssClass = `.${element.className.replace(/\s+/g, '.').replace(/[:*+?^${}()|[\]\\]/gi, '\\$&')}`;
             }
-            if (el.hasAttribute('id') && el.id !== '') {
-                stack.unshift(el.nodeName.toLowerCase() + '#' + el.id)
-                // } else if ( el.className ) {
-                //     stack.unshift( el.nodeName.toLowerCase() + '.' + el.className )
-            } else if (sibCount > 1) {
-                // stack.unshift( el.nodeName.toLowerCase() + ':eq(' + sibIndex + ')' )
-                stack.unshift(el.nodeName.toLowerCase() + ':nth-child(' + (sibIndex + 1) + ')')
-            } else {
-                stack.unshift(el.nodeName.toLowerCase())
-            }
-            el = el.parentNode
+
+            parents.unshift({
+                element,
+                selector: tagName + cssId + cssClass,
+            });
+
+            element = element.parentNode !== document ? element.parentNode : false;
         }
 
-        return stack.slice(1) // removes the html element
+        return parents;
+    };
+
+    const nthElement = (element) => {
+        let c = element;
+        let nth = 1;
+        while (c.previousElementSibling !== null) {
+            if (c.previousElementSibling.nodeName === element.nodeName) {
+                nth++;
+            }
+            c = c.previousElementSibling;
+        }
+
+        return nth;
+    };
+
+    const nthSelectorNeeded = (selector, path) => {
+        const querySelector = path === '' ? selector : `${path} > ${selector}`;
+
+        return document.querySelectorAll(querySelector).length > 1;
+    };
+
+    const buildPathString = (parents) => {
+        const pathArr = [];
+
+        parents.forEach((parent) => {
+            if (nthSelectorNeeded(parent.selector, pathArr.join(' > '))) {
+                parent.selector += `:nth-of-type(${nthElement(parent.element)})`;
+            }
+            pathArr.push(parent.selector);
+        });
+
+        return pathArr.join(' > ');
+    };
+
+    const domElementPath = (element) => {
+        if (!(element instanceof HTMLElement)) {
+            throw new Error('element must be of type `HTMLElement`.');
+        }
+
+        return buildPathString(parentElements(element));
+    }
+
+    function getDomPath(el) {
+        return [domElementPath(el)]
     }
 
     function syncStyle(msg) {
@@ -228,7 +263,7 @@
             position: fixed;
             right: 0;
             bottom: 0;`
-            dom.innerHTML = `<div id="${dom_id}TITLE" style="color: yellow;text-shadow: 0px 1px 1px black;position: fixed;bottom: 0;right: 0;">SOA</div>
+            dom.innerHTML = `<div id="${dom_id}TITLE" style="cursor: pointer;color: yellow;text-shadow: 0px 1px 1px black;position: fixed;bottom: 0;right: 0;">SOA</div>
             <div id="${dom_id}PANEL" style="
             width: 100vw;
             height: 100vh;
@@ -242,10 +277,10 @@
             flex-direction: column;
             ">
                 <div>
-                    <div id="${dom_id}BTN" style="text-shadow: 0 1px white;padding: 20px 30px;">Start</div>
+                    <div id="${dom_id}BTN" style="cursor: pointer;text-shadow: 0 1px white;padding: 20px 30px;">Start</div>
                 </div>
                 <div>
-                    <label style="display: flex;text-shadow: 0 1px white;">Sync Click Event<input type="checkbox" value="1" id="${dom_id}EVT"></label>
+                    <label style="cursor: pointer;display: flex;text-shadow: 0 1px white;">Sync Click Event<input type="checkbox" value="1" id="${dom_id}EVT"></label>
                 </div>
 
             </div>`
