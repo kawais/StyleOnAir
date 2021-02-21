@@ -6,8 +6,12 @@ const url = require('url')
 const { debug } = require('console')
 
 const server = http.createServer(function (req, res) {
-    if (req.url === '/client.js' || req.url === '/index.html') {
-        fs.createReadStream(path.resolve(__dirname, "." + req.url)).pipe(res)
+    let file = req.url
+    if (file === '/') {
+        file = '/index.html'
+    }
+    if (file === '/client.js' || file === '/index.html') {
+        fs.createReadStream(path.resolve(__dirname, "." + file)).pipe(res)
     } else {
         res.end()
     }
@@ -52,4 +56,4 @@ server.on('upgrade', function upgrade(request, socket, head) {
 })
 const port = process.env.SOA_PORT || 8888
 debug(`Server on ${port}`)
-server.listen(port)
+server.listen(port, "0.0.0.0")
